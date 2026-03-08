@@ -325,7 +325,10 @@ fun AirQualityScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Row(
+                                modifier = Modifier.weight(1f),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.Air,
                                     contentDescription = null,
@@ -335,9 +338,11 @@ fun AirQualityScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = name,
-                                    style = MaterialTheme.typography.bodyMedium
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
+                            Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "${String.format("%.1f", value)} $unit",
                                 style = MaterialTheme.typography.bodyMedium,
