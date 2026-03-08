@@ -9,9 +9,9 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
     private const val BASE_URL = "https://api.openweathermap.org/"
 
-    // Free API key for OpenWeatherMap Air Pollution API
-    // Users should replace this with their own key from https://openweathermap.org/api
-    const val API_KEY = "demo_key_replace_with_yours"
+    // OpenWeatherMap Air Pollution API key
+    // Get your own free key at https://openweathermap.org/api
+    const val API_KEY = "234dbdb4ffb4189d33de80cfb2b6f424"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
