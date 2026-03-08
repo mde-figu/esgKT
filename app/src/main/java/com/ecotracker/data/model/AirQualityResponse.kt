@@ -1,29 +1,78 @@
 package com.ecotracker.data.model
 
-import com.google.gson.annotations.SerializedName
+import com.google.gson.JsonDeserializationContext
+import com.google.gson.JsonDeserializer
+import com.google.gson.JsonElement
+import java.lang.reflect.Type
 
 data class AirQualityResponse(
-    @SerializedName("coord") val coord: List<Double>? = null,
-    @SerializedName("list") val list: List<AirQualityData>
+    val coord: List<Double>? = null,
+    val list: List<AirQualityData>
 )
 
 data class AirQualityData(
-    @SerializedName("main") val main: AirQualityMain,
-    @SerializedName("components") val components: AirQualityComponents,
-    @SerializedName("dt") val dt: Long
+    val main: AirQualityMain,
+    val components: AirQualityComponents,
+    val dt: Long
 )
 
 data class AirQualityMain(
-    @SerializedName("aqi") val aqi: Int
+    val aqi: Int
 )
 
 data class AirQualityComponents(
-    @SerializedName("co") val co: Double,
-    @SerializedName("no") val no: Double,
-    @SerializedName("no2") val no2: Double,
-    @SerializedName("o3") val o3: Double,
-    @SerializedName("so2") val so2: Double,
-    @SerializedName("pm2_5") val pm25: Double,
-    @SerializedName("pm10") val pm10: Double,
-    @SerializedName("nh3") val nh3: Double
+    val co: Double,
+    val no: Double,
+    val no2: Double,
+    val o3: Double,
+    val so2: Double,
+    val pm25: Double,
+    val pm10: Double,
+    val nh3: Double
 )
+
+/**
+ * Custom deserializer that manually parses the Air Quality API JSON response.
+ * This avoids Gson's reflection-based generic type resolution which breaks under R8.
+ */
+class AirQualityResponseDeserializer : JsonDeserializer<AirQualityResponse> {
+    override fun deserialize(
+        json: JsonElement,
+        typeOfT: Type,
+        context: JsonDeserializationContext
+    ): AirQualityResponse {
+        val jsonObject = json.asJsonObject
+
+        val coord = if (jsonObject.has("coord")) {
+            jsonObject.getAsJsonArray("coord").map { it.asDouble }
+        } else {
+            null
+        }
+
+        val listArray = jsonObject.getAsJsonArray("list")
+        val dataList = listArray.map { element ->
+            val dataObj = element.asJsonObject
+
+            val mainObj = dataObj.getAsJsonObject("main")
+            val main = AirQualityMain(aqi = mainObj.get("aqi").asInt)
+
+            val compObj = dataObj.getAsJsonObject("components")
+            val components = AirQualityComponents(
+                co = compObj.get("co").asDouble,
+                no = compObj.get("no").asDouble,
+                no2 = compObj.get("no2").asDouble,
+                o3 = compObj.get("o3").asDouble,
+                so2 = compObj.get("so2").asDouble,
+                pm25 = compObj.get("pm2_5").asDouble,
+                pm10 = compObj.get("pm10").asDouble,
+                nh3 = compObj.get("nh3").asDouble
+            )
+
+            val dt = dataObj.get("dt").asLong
+
+            AirQualityData(main = main, components = components, dt = dt)
+        }
+
+        return AirQualityResponse(coord = coord, list = dataList)
+    }
+}
