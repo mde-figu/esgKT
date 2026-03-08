@@ -91,37 +91,37 @@ class AirQualityViewModel : ViewModel() {
             "?lat=$lat&lon=$lon&appid=${RetrofitClient.API_KEY}"
 
         val request = Request.Builder().url(url).build()
-        val response = httpClient.newCall(request).execute()
+        return httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw Exception("HTTP ${response.code}: ${response.message}")
+            }
 
-        if (!response.isSuccessful) {
-            throw Exception("HTTP ${response.code}: ${response.message}")
+            val bodyString = response.body?.string()
+                ?: throw Exception("Resposta vazia do servidor")
+
+            val json = JSONObject(bodyString)
+            val listArray = json.getJSONArray("list")
+            val firstItem = listArray.getJSONObject(0)
+
+            val mainObj = firstItem.getJSONObject("main")
+            val main = AirQualityMain(aqi = mainObj.getInt("aqi"))
+
+            val compObj = firstItem.getJSONObject("components")
+            val components = AirQualityComponents(
+                co = compObj.optDouble("co", 0.0),
+                no = compObj.optDouble("no", 0.0),
+                no2 = compObj.optDouble("no2", 0.0),
+                o3 = compObj.optDouble("o3", 0.0),
+                so2 = compObj.optDouble("so2", 0.0),
+                pm25 = compObj.optDouble("pm2_5", 0.0),
+                pm10 = compObj.optDouble("pm10", 0.0),
+                nh3 = compObj.optDouble("nh3", 0.0)
+            )
+
+            val dt = firstItem.getLong("dt")
+
+            AirQualityData(main = main, components = components, dt = dt)
         }
-
-        val bodyString = response.body?.string()
-            ?: throw Exception("Resposta vazia do servidor")
-
-        val json = JSONObject(bodyString)
-        val listArray = json.getJSONArray("list")
-        val firstItem = listArray.getJSONObject(0)
-
-        val mainObj = firstItem.getJSONObject("main")
-        val main = AirQualityMain(aqi = mainObj.getInt("aqi"))
-
-        val compObj = firstItem.getJSONObject("components")
-        val components = AirQualityComponents(
-            co = compObj.optDouble("co", 0.0),
-            no = compObj.optDouble("no", 0.0),
-            no2 = compObj.optDouble("no2", 0.0),
-            o3 = compObj.optDouble("o3", 0.0),
-            so2 = compObj.optDouble("so2", 0.0),
-            pm25 = compObj.optDouble("pm2_5", 0.0),
-            pm10 = compObj.optDouble("pm10", 0.0),
-            nh3 = compObj.optDouble("nh3", 0.0)
-        )
-
-        val dt = firstItem.getLong("dt")
-
-        return AirQualityData(main = main, components = components, dt = dt)
     }
 
     fun getAqiLabel(aqi: Int): String = when (aqi) {
