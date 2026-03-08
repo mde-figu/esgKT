@@ -299,59 +299,13 @@ fun AirQualityScreen(
                 // Pollutant Details
                 SectionTitle(text = "Detalhes dos Poluentes")
 
-                val pollutants = listOf(
-                    Triple("PM2.5", data.components.pm25, "µg/m³"),
-                    Triple("PM10", data.components.pm10, "µg/m³"),
-                    Triple("O₃ (Ozônio)", data.components.o3, "µg/m³"),
-                    Triple("NO₂ (Dióxido de Nitrogênio)", data.components.no2, "µg/m³"),
-                    Triple("SO₂ (Dióxido de Enxofre)", data.components.so2, "µg/m³"),
-                    Triple("CO (Monóxido de Carbono)", data.components.co, "µg/m³"),
-                    Triple("NH₃ (Amônia)", data.components.nh3, "µg/m³")
-                )
-
-                pollutants.forEach { (name, value, unit) ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 3.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Air,
-                                    contentDescription = null,
-                                    tint = BluePrimary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = name,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "${String.format("%.1f", value)} $unit",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = BluePrimary
-                            )
-                        }
-                    }
-                }
+                PollutantRow(label = "PM2.5", value = data.components.pm25)
+                PollutantRow(label = "PM10", value = data.components.pm10)
+                PollutantRow(label = "O3 (Ozonio)", value = data.components.o3)
+                PollutantRow(label = "NO2 (Dioxido de Nitrogenio)", value = data.components.no2)
+                PollutantRow(label = "SO2 (Dioxido de Enxofre)", value = data.components.so2)
+                PollutantRow(label = "CO (Monoxido de Carbono)", value = data.components.co)
+                PollutantRow(label = "NH3 (Amonia)", value = data.components.nh3)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -435,6 +389,50 @@ fun AirQualityScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun PollutantRow(label: String, value: Double) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp),
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Air,
+                    contentDescription = null,
+                    tint = BluePrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.Black
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = String.format("%.1f", value) + " µg/m³",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = BluePrimary,
+                modifier = Modifier.padding(start = 28.dp)
+            )
         }
     }
 }
