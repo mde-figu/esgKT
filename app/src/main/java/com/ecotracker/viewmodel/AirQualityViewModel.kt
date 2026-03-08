@@ -2,12 +2,20 @@ package com.ecotracker.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ecotracker.data.model.AirQualityComponents
 import com.ecotracker.data.model.AirQualityData
+import com.ecotracker.data.model.AirQualityMain
 import com.ecotracker.data.remote.RetrofitClient
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 data class AirQualityUiState(
     val isLoading: Boolean = false,
@@ -19,6 +27,11 @@ data class AirQualityUiState(
 class AirQualityViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(AirQualityUiState())
     val uiState: StateFlow<AirQualityUiState> = _uiState.asStateFlow()
+
+    private val httpClient = OkHttpClient.Builder()
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
+        .build()
 
     data class CityOption(
         val name: String,
@@ -51,14 +64,12 @@ class AirQualityViewModel : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val response = RetrofitClient.airQualityApi.getAirQuality(
-                    lat = city.lat,
-                    lon = city.lon,
-                    apiKey = RetrofitClient.API_KEY
-                )
+                val data = withContext(Dispatchers.IO) {
+                    fetchAirQualityFromApi(city.lat, city.lon)
+                }
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    airQualityData = response.list.firstOrNull(),
+                    airQualityData = data,
                     errorMessage = null
                 )
             } catch (e: Exception) {
@@ -68,6 +79,49 @@ class AirQualityViewModel : ViewModel() {
                 )
             }
         }
+    }
+
+    /**
+     * Fetches air quality data using OkHttp directly and parses JSON manually.
+     * This bypasses Retrofit and Gson entirely, avoiding all reflection-based
+     * type resolution that R8 breaks in release builds.
+     */
+    private fun fetchAirQualityFromApi(lat: Double, lon: Double): AirQualityData {
+        val url = "https://api.openweathermap.org/data/2.5/air_pollution" +
+            "?lat=$lat&lon=$lon&appid=${RetrofitClient.API_KEY}"
+
+        val request = Request.Builder().url(url).build()
+        val response = httpClient.newCall(request).execute()
+
+        if (!response.isSuccessful) {
+            throw Exception("HTTP ${response.code}: ${response.message}")
+        }
+
+        val bodyString = response.body?.string()
+            ?: throw Exception("Resposta vazia do servidor")
+
+        val json = JSONObject(bodyString)
+        val listArray = json.getJSONArray("list")
+        val firstItem = listArray.getJSONObject(0)
+
+        val mainObj = firstItem.getJSONObject("main")
+        val main = AirQualityMain(aqi = mainObj.getInt("aqi"))
+
+        val compObj = firstItem.getJSONObject("components")
+        val components = AirQualityComponents(
+            co = compObj.optDouble("co", 0.0),
+            no = compObj.optDouble("no", 0.0),
+            no2 = compObj.optDouble("no2", 0.0),
+            o3 = compObj.optDouble("o3", 0.0),
+            so2 = compObj.optDouble("so2", 0.0),
+            pm25 = compObj.optDouble("pm2_5", 0.0),
+            pm10 = compObj.optDouble("pm10", 0.0),
+            nh3 = compObj.optDouble("nh3", 0.0)
+        )
+
+        val dt = firstItem.getLong("dt")
+
+        return AirQualityData(main = main, components = components, dt = dt)
     }
 
     fun getAqiLabel(aqi: Int): String = when (aqi) {
